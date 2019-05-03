@@ -9,7 +9,11 @@
 import SpriteKit
 import GameplayKit
 
-class GameScene: SKScene {
+//delegado de la física
+class GameScene: SKScene, SKPhysicsContactDelegate {
+    
+    let kHeroeSize: CGSize = CGSize(width: 30, height: 16)
+    let kRedRectangle: CGSize = CGSize(width: 200, height: 95)
     
     let background = SKSpriteNode(imageNamed: "background")
     var heroe = SKSpriteNode(imageNamed: "elprimo")
@@ -18,12 +22,14 @@ class GameScene: SKScene {
     let buttonAttack = SKSpriteNode(imageNamed: "attack")
     var suelo = SKSpriteNode(imageNamed: "platform")
     
-    let kheroeCategory: UInt32 = 0x1 << 0
-    let ksueloCategory: UInt32 = 0x1 << 1
-    let ksceneEdgeCategory: UInt32 = 0x1 << 2
-    
+    enum tipoNodo: UInt32 {
+        case heroe = 1
+        case suelo = 2
+    }
     
     override func didMove(to view: SKView) {
+        //delegado de la física
+        self.physicsWorld.contactDelegate = self
         
         //añadir fondo, una posicion
         buttonLeft.size = CGSize(width: (self.size.width) / 12, height: (self.size.height) / 9)
@@ -37,31 +43,33 @@ class GameScene: SKScene {
         buttonRight.position = CGPoint(x: -190, y: -125)
         buttonAttack.position = CGPoint(x: 250, y: -125)
         
-        let textHeroe = SKTexture(imageNamed: "elprimo")
-        heroe = SKSpriteNode(texture: textHeroe)
+        let heroe = SKSpriteNode(imageNamed: "elprimo")
         heroe.size = CGSize(width: (self.size.width) / 9, height: (self.size.height) / 6)
-        heroe.position = CGPoint(x: 0, y: +50)
-        heroe.zPosition = 0
-        heroe.physicsBody = SKPhysicsBody(rectangleOf: textHeroe.size())
+        heroe.position = CGPoint(x: 0, y: 200)
+        //es importante que el siguiente tamaño sea correcto para que no tape otros nodos y desaparezcan de la vista
+        heroe.physicsBody = SKPhysicsBody(rectangleOf: kHeroeSize)
         heroe.physicsBody?.isDynamic = true
         heroe.physicsBody?.affectedByGravity = true
-        heroe.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
-        heroe.physicsBody?.collisionBitMask = ksueloCategory
-        
-        
-        let textPlat = SKTexture(imageNamed: "platform")
-        suelo.physicsBody = SKPhysicsBody(rectangleOf: textPlat.size())
-        suelo.physicsBody?.affectedByGravity = false
-        suelo.physicsBody?.isDynamic = true
-        suelo.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
-        suelo = SKSpriteNode(texture: textPlat)
+        //juega con los valores de la masa y desnsidad del heroe y el suelo
+        heroe.physicsBody?.mass = 0.00002
+    
+        //definir bien cual es  nuestro bitmask y con cual podemos hacer colisión
+        heroe.physicsBody?.categoryBitMask = tipoNodo.heroe.rawValue
+        heroe.physicsBody?.collisionBitMask = tipoNodo.suelo.rawValue
+
+        let suelo = SKSpriteNode(imageNamed: "platform")
         suelo.size = CGSize(width: (self.size.width) / 6, height: (self.size.height) / 6)
         suelo.position = CGPoint(x: 0, y: -50)
-        suelo.zPosition = 0
-        //con quien va a colisionar
-        suelo.physicsBody?.collisionBitMask = kheroeCategory
-        
-        
+        suelo.physicsBody = SKPhysicsBody(rectangleOf: kRedRectangle)
+        suelo.physicsBody?.affectedByGravity = false
+        suelo.physicsBody?.isDynamic = true
+        //juega con los valores de la masa y desnsidad del heroe y el suelo
+        suelo.physicsBody?.mass = 10.0
+
+        //definir bien cual es  nuestro bitmask y con cual podemos hacer colisión
+        suelo.physicsBody?.categoryBitMask = tipoNodo.suelo.rawValue
+        suelo.physicsBody?.collisionBitMask = tipoNodo.heroe.rawValue
+
         background.size = CGSize(width: (self.size.width), height: (self.size.height))
         background.zPosition = -1
         
@@ -71,9 +79,7 @@ class GameScene: SKScene {
         self.addChild(buttonLeft)
         self.addChild(buttonRight)
         self.addChild(buttonAttack)
-        
     }
-    
     
     func touchDown(atPoint pos : CGPoint) {
         
